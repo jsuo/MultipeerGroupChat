@@ -51,6 +51,9 @@
 #import "SessionContainer.h"
 #import "Transcript.h"
 
+static NSString* const INFO_KEY = @"app_version";
+static NSString* const APP_VERSION = @"1.0";
+
 @interface SessionContainer() <MCNearbyServiceBrowserDelegate, MCNearbyServiceAdvertiserDelegate>
 // Framework class for handling incoming/outgoing invitations
 @property (strong, nonatomic) MCNearbyServiceAdvertiser *advertiser;
@@ -58,11 +61,15 @@
 @end
 
 @implementation SessionContainer
+{
+    NSDictionary*   _appInfo;
+}
 
 // Session container designated initializer
 - (id)initWithDisplayName:(NSString *)displayName serviceType:(NSString *)serviceType
 {
     if (self = [super init]) {
+        _appInfo = @{INFO_KEY : APP_VERSION};
         // Create the peer ID with user input display name.  This display name will be seen by other browsing peers
         MCPeerID *peerID = [[MCPeerID alloc] initWithDisplayName:displayName];
         // Create the session that peers will be invited/join into.  You can provide an optinal security identity for custom authentication.  Also you can set the encryption preference for the session.
@@ -70,7 +77,7 @@
         // Set ourselves as the MCSessionDelegate
         _session.delegate = self;
         // Create the advertiser/browser for managing incoming invitation
-        _advertiser = [[MCNearbyServiceAdvertiser alloc] initWithPeer:peerID discoveryInfo:nil serviceType:serviceType];
+        _advertiser = [[MCNearbyServiceAdvertiser alloc] initWithPeer:peerID discoveryInfo:_appInfo serviceType:serviceType];
         _advertiser.delegate = self;
         _browser = [[MCNearbyServiceBrowser alloc] initWithPeer:peerID serviceType:serviceType];
         _browser.delegate = self;
@@ -232,7 +239,15 @@
 - (void)browser:(MCNearbyServiceBrowser *)browser foundPeer:(MCPeerID *)peerID withDiscoveryInfo:(NSDictionary *)info
 {
     NSLog(@"foundPeer: %@", peerID.displayName);
-    if (([_session.myPeerID.displayName compare:peerID.displayName] == NSOrderedDescending)) {
+    
+    if (info) {
+        NSString* foundPeerVersion = info[INFO_KEY];
+        if ([foundPeerVersion isEqualToString:APP_VERSION]) {
+            NSLog(@"invitePeer: %@", peerID.displayName);
+            [browser invitePeer:peerID toSession:_session withContext:nil timeout:30.0];
+        }
+        
+    } else {
         NSLog(@"invitePeer: %@", peerID.displayName);
         [browser invitePeer:peerID toSession:_session withContext:nil timeout:30.0];
     }
