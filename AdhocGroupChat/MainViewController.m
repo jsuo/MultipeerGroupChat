@@ -77,7 +77,7 @@ NSString * const kNSDefaultServiceType = @"serviceTypeKey";
 @property (retain, nonatomic) IBOutlet UITextField *messageComposeTextField;
 // Button for executing the message send.
 @property (retain, nonatomic) IBOutlet UIBarButtonItem *sendMessageButton;
-
+@property (nonatomic) CGFloat toolbarInitialOriginY;
 @end
 
 @implementation MainViewController
@@ -87,7 +87,9 @@ NSString * const kNSDefaultServiceType = @"serviceTypeKey";
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-
+    
+    self.toolbarInitialOriginY = self.navigationController.toolbar.frame.origin.y;
+    
     // Init transcripts array to use as table view data source
     _transcripts = [NSMutableArray new];
     _imageNameIndex = [NSMutableDictionary new];
@@ -436,13 +438,21 @@ NSString * const kNSDefaultServiceType = @"serviceTypeKey";
     [[userInfo objectForKey:UIKeyboardAnimationCurveUserInfoKey] getValue:&animationCurve];
     [[userInfo objectForKey:UIKeyboardAnimationDurationUserInfoKey] getValue:&animationDuration];
     [[userInfo objectForKey:UIKeyboardFrameEndUserInfoKey] getValue:&keyboardFrame];
+    
+    CGFloat toolbarOriginY = self.toolbarInitialOriginY;
+    if (up) {
+        toolbarOriginY += (keyboardFrame.size.height * -1.0);
+    }
 
     // Animate up or down
     [UIView beginAnimations:nil context:nil];
     [UIView setAnimationDuration:animationDuration];
     [UIView setAnimationCurve:animationCurve];
 
-    [self.navigationController.toolbar setFrame:CGRectMake(self.navigationController.toolbar.frame.origin.x, self.navigationController.toolbar.frame.origin.y + (keyboardFrame.size.height * (up ? -1 : 1)), self.navigationController.toolbar.frame.size.width, self.navigationController.toolbar.frame.size.height)];
+    [self.navigationController.toolbar setFrame:CGRectMake(self.navigationController.toolbar.frame.origin.x,
+                                                           toolbarOriginY,
+                                                           self.navigationController.toolbar.frame.size.width,
+                                                           self.navigationController.toolbar.frame.size.height)];
     [UIView commitAnimations];
 }
 
